@@ -176,7 +176,7 @@ def index():
 
 @app.get("/api/status")
 def status():
-    return jsonify({"ok":True,"version":"web-v21","engine":_engine_name or "PaddleOCR (未ロード)"})
+    return jsonify({"ok":True,"version":"web-v22","engine":_engine_name or "PaddleOCR (未ロード)"})
 
 @app.post("/api/ocr")
 def ocr_api():

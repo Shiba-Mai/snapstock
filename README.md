@@ -1,3 +1,3 @@
-# SnapStock Web v21
+# SnapStock Web v22
 
-Vercel公開用・画像読み込み安定化版です。
+Vercel公開用・HEIC/HEIF対応版です。

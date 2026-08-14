@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SnapStock Web v21</title>
+  <title>SnapStock Web v22</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
   <header class="topbar">
     <div>
       <p class="eyebrow">Receipt × Pantry × Shopping</p>
-      <h1>SnapStock <small>Web v21</small></h1>
+      <h1>SnapStock <small>Web v22</small></h1>
     </div>
     <button class="icon-btn" id="resetBtn" title="データ初期化">↻</button>
   </header>
@@ -57,7 +57,7 @@
         <input type="file" id="receiptInput" accept="image/*" capture="environment" />
         <span class="camera">📷</span>
         <strong>レシートを撮影 / 選択</strong>
-        <small>Web v21：画像読込安定化</small>
+        <small>Web v22：HEIC/HEIF対応</small>
       </label>
       <img id="receiptPreview" class="preview hidden" alt="レシートプレビュー" />
 
@@ -274,6 +274,7 @@
     <button class="secondary danger-text" id="deleteBudgetItem">この明細を削除</button>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

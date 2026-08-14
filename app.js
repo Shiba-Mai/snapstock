@@ -432,8 +432,36 @@ function startNewReceipt(){
   setTimeout(()=>$("receiptInput").click(),50);
 }
 
+
+async function convertHeicToJpeg(file){
+  const type=(file.type||"").toLowerCase();
+  const name=(file.name||"").toLowerCase();
+  const isHeic=type.includes("heic")||type.includes("heif")||name.endsWith(".heic")||name.endsWith(".heif");
+  if(!isHeic) return file;
+
+  if(typeof heic2any!=="function"){
+    throw new Error("HEIC変換ライブラリの読み込みに失敗しました。ページを再読み込みしてください");
+  }
+
+  const converted=await heic2any({
+    blob:file,
+    toType:"image/jpeg",
+    quality:0.9
+  });
+
+  const blob=Array.isArray(converted)?converted[0]:converted;
+  if(!blob) throw new Error("HEIC画像のJPEG変換に失敗しました");
+
+  return new File(
+    [blob],
+    (file.name||"receipt").replace(/\.(heic|heif)$/i,"")+".jpg",
+    {type:"image/jpeg"}
+  );
+}
+
 async function normalizeReceiptImage(file){
   if(!file) throw new Error("画像ファイルが選択されていません");
+  file=await convertHeicToJpeg(file);
   const maxBytes=20*1024*1024;
   if(file.size>maxBytes) throw new Error("画像サイズが大きすぎます（20MB以下にしてください）");
 
@@ -505,7 +533,8 @@ $("receiptInput").onchange=async()=>{
     $("receiptPreview").src=selectedImage;
     $("receiptPreview").classList.remove("hidden");
     $("ocrBtn").classList.remove("hidden");
-    $("ocrStatus").textContent=`画像の準備ができました（${Math.round(f.size/1024)}KB / ${f.type||"形式不明"}）`;
+    const preparedType=selectedImage?.startsWith("data:image/jpeg")?"JPEG":"画像";
+    $("ocrStatus").textContent=`画像の準備ができました（${preparedType}へ変換済み）`;
   }catch(e){
     console.error("image prepare error",e);
     selectedImage=null;
