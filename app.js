@@ -433,37 +433,85 @@ function startNewReceipt(){
 }
 
 async function normalizeReceiptImage(file){
-  const u=URL.createObjectURL(file);
+  if(!file) throw new Error("画像ファイルが選択されていません");
+  const maxBytes=20*1024*1024;
+  if(file.size>maxBytes) throw new Error("画像サイズが大きすぎます（20MB以下にしてください）");
+
+  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
+  if(!ctx) throw new Error("画像変換機能を利用できません");
+
+  let source=null;
+  let objectUrl=null;
+
   try{
-    const img=new Image(); await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error("画像を開けません"));img.src=u});
-    const c=document.createElement("canvas"),max=1800,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
-    c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
-    const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL("image/jpeg",.9);
-  }finally{URL.revokeObjectURL(u)}
+    if("createImageBitmap" in window){
+      try{
+        source=await createImageBitmap(file);
+      }catch(bitmapErr){
+        console.warn("createImageBitmap failed", bitmapErr);
+      }
+    }
+
+    if(!source){
+      objectUrl=URL.createObjectURL(file);
+      const img=new Image();
+      img.decoding="async";
+      await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error("画像の読み込みがタイムアウトしました")),15000);
+        img.onload=()=>{clearTimeout(timer);resolve();};
+        img.onerror=()=>{clearTimeout(timer);reject(new Error("この画像形式をブラウザで開けませんでした"));};
+        img.src=objectUrl;
+      });
+      source=img;
+    }
+
+    const sw=source.width || source.naturalWidth;
+    const sh=source.height || source.naturalHeight;
+    if(!sw || !sh) throw new Error("画像の縦横サイズを取得できませんでした");
+
+    const maxSide=2200;
+    const scale=Math.min(1,maxSide/Math.max(sw,sh));
+    canvas.width=Math.max(1,Math.round(sw*scale));
+    canvas.height=Math.max(1,Math.round(sh*scale));
+
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(source,0,0,canvas.width,canvas.height);
+
+    const dataUrl=canvas.toDataURL("image/jpeg",0.9);
+    if(!dataUrl || !dataUrl.startsWith("data:image/jpeg")){
+      throw new Error("JPEGへの変換に失敗しました");
+    }
+    return dataUrl;
+  } finally {
+    if(source && typeof source.close==="function"){
+      try{source.close()}catch(e){}
+    }
+    if(objectUrl) URL.revokeObjectURL(objectUrl);
+  }
 }
 $("receiptInput").onchange=async()=>{
-  const f=$("receiptInput").files?.[0];
-  if(!f)return;
+  const input=$("receiptInput");
+  const f=input.files?.[0];
+  if(!f) return;
 
-  // Important: every selected receipt gets a completely fresh session.
-  resetReceiptState();
-  const mySession=receiptSessionId;
+  $("ocrStatus").textContent="画像を準備しています…";
+  $("ocrBtn").classList.add("hidden");
+  $("ocrPanel").classList.add("hidden");
 
-  $("ocrStatus").textContent="新しいレシート画像を準備しています…";
   try{
-    const img=await normalizeReceiptImage(f);
-    if(mySession!==receiptSessionId) return;
-    selectedImage=img;
+    selectedImage=await normalizeReceiptImage(f);
     $("receiptPreview").src=selectedImage;
     $("receiptPreview").classList.remove("hidden");
     $("ocrBtn").classList.remove("hidden");
-    $("newReceiptBtn").classList.remove("hidden");
-    $("ocrStatus").textContent="画像の準備ができました。この写真だけを解析します。";
+    $("ocrStatus").textContent=`画像の準備ができました（${Math.round(f.size/1024)}KB / ${f.type||"形式不明"}）`;
   }catch(e){
-    if(mySession!==receiptSessionId) return;
-    console.error(e);
-    $("ocrStatus").textContent="画像の準備に失敗しました。";
+    console.error("image prepare error",e);
+    selectedImage=null;
+    $("receiptPreview").src="";
+    $("receiptPreview").classList.add("hidden");
+    $("ocrStatus").textContent="画像の準備に失敗しました：" + (e?.message||String(e));
   }
 };
 $("ocrBtn").onclick=async()=>{
@@ -505,7 +553,7 @@ $("ocrBtn").onclick=async()=>{
     if(mySession!==receiptSessionId) return;
     if(body.request_id && body.request_id!==requestId) return;
 
-    if(!res.ok || !body.ok) throw new Error(body.error||"OCRに失敗しました");
+    if(!res.ok || !body.ok) throw new Error(body.error||`OCRに失敗しました（HTTP ${res.status}）`);
 
     const lines=body.lines||[];
     $("ocrText").value=lines.join("\n");

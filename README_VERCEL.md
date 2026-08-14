@@ -1,24 +1,15 @@
-# SnapStock Web v20 — Vercel公開版
+# SnapStock Web v21 — Vercel公開版
 
-## 公開手順
-1. このフォルダの中身を GitHub の新規リポジトリへアップロード
-2. Vercel にログイン
-3. Add New → Project
-4. GitHub の SnapStock リポジトリを Import
-5. Deploy
-6. Vercel が `Dockerfile.vercel` を自動検出してコンテナとしてビルド
-7. 発行された `https://...vercel.app` URL を共有
+## v21の修正
+- Vercel上で画像選択直後に失敗する問題を修正
+- createImageBitmap()を優先して画像を読み込み
+- 非対応環境ではImage()にフォールバック
+- 画像をブラウザ内でJPEGへ変換してからOCR送信
+- 最大辺2200pxへ縮小し、ブラウザのメモリ負荷を軽減
+- 20MBを超える画像は明確にエラー表示
+- 読み込み成功時にファイルサイズと画像形式を表示
+- OCR失敗時にHTTPエラーも表示
 
-## API
-OpenAI API / Google Vision API などのAPIキーは不要です。
-OCRはPaddleOCRをVercel上のコンテナ内で実行します。
-
-## データ保存
-家計簿・在庫・買い物リストはブラウザのlocalStorageに保存します。
-利用者・端末ごとに別データになります。
-
-## 注意
-- 初回ビルドはPaddleOCR/PaddlePaddleのインストールで時間がかかります。
-- 初回OCR時はモデル準備で待ち時間が発生する可能性があります。
-- 発表前に公開URLでレシートOCRを事前テストしてください。
-- レシート画像はOCRのためSnapStockのVercelサーバーへ送信されます。
+## GitHubへの反映
+既存のsnapstockリポジトリでv21のファイルに置き換えてCommitしてください。
+VercelはGitHub更新を検知して自動再デプロイします。

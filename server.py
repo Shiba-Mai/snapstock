@@ -6,6 +6,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 ROOT = Path(__file__).resolve().parent
 app = Flask(__name__, static_folder=str(ROOT), static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = 30 * 1024 * 1024
 _ocr = None
 _ocr_lock = threading.Lock()
 _engine_name = None
@@ -175,7 +176,7 @@ def index():
 
 @app.get("/api/status")
 def status():
-    return jsonify({"ok":True,"engine":_engine_name or "PaddleOCR (未ロード)"})
+    return jsonify({"ok":True,"version":"web-v21","engine":_engine_name or "PaddleOCR (未ロード)"})
 
 @app.post("/api/ocr")
 def ocr_api():
