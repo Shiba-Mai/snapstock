@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapStock Web v20</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Receipt × Pantry × Shopping</p>
+      <h1>SnapStock <small>Web v20</small></h1>
+    </div>
+    <button class="icon-btn" id="resetBtn" title="データ初期化">↻</button>
+  </header>
+
+  <main>
+    <section class="screen active" id="homeScreen">
+      <div class="hero">
+        <p>レシート1枚で、</p>
+        <h2>家計簿も、在庫も、買い物も。</h2>
+        <button class="primary" data-go="scanScreen">レシートを読み取る</button>
+      </div>
+
+      <div class="stats stats3">
+        <article class="card"><span>今月の支出</span><strong id="monthSpend">¥0</strong></article>
+        <article class="card"><span>在庫あり</span><strong id="stockCount">0</strong></article>
+        <article class="card expiry-home-card" id="expiryHomeCard"><span>期限が近い</span><strong id="expirySoonCount">0</strong></article>
+      </div>
+
+      <section class="panel expiry-panel hidden" id="expiryAlertPanel">
+        <div class="panel-head">
+          <div><p class="eyebrow">Expiry Alert</p><h3>期限が近い食品</h3></div>
+          <button class="text-btn" id="showExpiryPantry">在庫を見る</button>
+        </div>
+        <div id="expiryAlertList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>最近の購入</h3>
+          <button class="text-btn" data-go="budgetScreen">すべて見る</button>
+        </div>
+        <div id="recentList" class="list empty">まだ購入データがありません。</div>
+      </section>
+    </section>
+
+    <section class="screen" id="scanScreen">
+      <div class="page-title">
+        <button class="back" data-go="homeScreen">←</button>
+        <div><p class="eyebrow">Step 1</p><h2>レシート登録</h2></div>
+      </div>
+
+      <label class="upload-box">
+        <input type="file" id="receiptInput" accept="image/*" capture="environment" />
+        <span class="camera">📷</span>
+        <strong>レシートを撮影 / 選択</strong>
+        <small>Web v20：Vercel公開対応</small>
+      </label>
+      <img id="receiptPreview" class="preview hidden" alt="レシートプレビュー" />
+
+      <button class="primary hidden" id="ocrBtn">レシートを解析する</button>
+        <button class="secondary hidden" id="newReceiptBtn">別のレシートを読み取る</button>
+      <p class="status" id="ocrStatus"></p>
+      <div id="ocrMeta" class="ocr-meta hidden">
+        <span id="ocrEngineBadge" class="meta-badge"></span>
+        <span id="ocrConfidenceBadge" class="meta-badge"></span>
+      </div>
+
+      <section class="panel hidden" id="ocrPanel">
+        <h3>読み取り結果</h3>
+        <textarea id="ocrText" rows="10" placeholder="OCR結果"></textarea>
+        <button class="secondary" id="sampleBtn">デモ用サンプルを入れる</button>
+        <button class="primary" id="toConfirmBtn">商品を確認する</button>
+      </section>
+    </section>
+
+    <section class="screen" id="confirmScreen">
+      <div class="page-title">
+        <button class="back" data-go="scanScreen">←</button>
+        <div><p class="eyebrow">Step 2</p><h2>読み取り確認</h2></div>
+      </div>
+
+      <div class="form-row two">
+        <label>店舗名<input id="storeName" placeholder="例：スーパー○○" /></label>
+        <label>購入日<input id="purchaseDate" type="date" /></label>
+      </div>
+
+      <div class="panel receipt-settings">
+        <div class="panel-head"><h3>このレシートの設定</h3></div>
+        <div class="setting-row">
+          <span>表示価格</span>
+          <div class="segmented" id="taxModeSwitch">
+            <button type="button" data-tax-mode="included" class="active-segment">税込</button>
+            <button type="button" data-tax-mode="excluded">税抜</button>
+          </div>
+        </div>
+        <p class="helper">税抜の場合は商品ごとの税率（8% / 10%）から税込支払額を計算します。OCRで税率が判断できない商品は8%を初期値にします。</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>読み取り結果</h3><button class="text-btn" id="addItemBtn">＋商品追加</button>
+        </div>
+        <p class="helper">OCR結果を商品ごとのカードに整理しています。商品名・金額が違う場合はその場で直接修正できます。読み取れなかった商品は「＋追加」から足せます。</p>
+        <div id="itemEditor"></div>
+      </div>
+
+      <div class="total-sticky">
+        <div class="total-compare">
+          <div class="total-box"><span>商品合計</span><strong id="confirmTotal">¥0</strong></div>
+          <div class="total-box receipt-total-box">
+            <span>レシート合計</span>
+            <div class="receipt-total-edit">
+              <strong id="receiptPrintedTotal">未検出</strong>
+              <button type="button" id="editReceiptTotalBtn" class="mini-edit-btn">✏️</button>
+            </div>
+          </div>
+        </div>
+        <div id="totalWarning" class="total-warning hidden"></div>
+      </div>
+      <div id="totalWarning" class="total-warning hidden"></div>
+      <button class="primary" id="saveBtn">家計簿＋在庫に登録</button>
+    </section>
+
+    <section class="screen" id="budgetScreen">
+      <div class="page-title">
+        <div><p class="eyebrow">Money</p><h2>家計簿</h2></div>
+      </div>
+
+      <div class="month-switcher">
+        <button id="prevMonth" class="month-btn">‹</button>
+        <strong id="budgetMonthLabel">2026年8月</strong>
+        <button id="nextMonth" class="month-btn">›</button>
+      </div>
+      <div class="stats">
+        <article class="card wide"><span>選択月の支出</span><strong id="budgetMonthSpend">¥0</strong></article>
+      </div>
+
+      <div id="budgetCategorySummary" class="category-summary"></div>
+
+      <div class="filter-wrap">
+        <p class="filter-label">カテゴリ</p>
+        <div id="budgetCategoryFilters" class="filter-row"></div>
+      </div>
+
+      <div id="budgetList" class="list empty">まだ購入データがありません。</div>
+    </section>
+
+    <section class="screen" id="pantryScreen">
+      <div class="page-title">
+        <div><p class="eyebrow">Pantry</p><h2>パントリー</h2></div>
+        <button class="primary compact" id="manualStockBtn">＋ 在庫追加</button>
+      </div>
+
+      <div class="filter-wrap">
+        <p class="filter-label">在庫状態</p>
+        <div class="filter-row">
+          <button data-stock-filter="all" class="filter-btn active-filter">すべて</button>
+          <button data-stock-filter="in" class="filter-btn">在庫あり</button>
+          <button data-stock-filter="out" class="filter-btn">在庫なし</button>
+        </div>
+      </div>
+
+      <div class="filter-wrap">
+        <p class="filter-label">カテゴリ</p>
+        <div id="pantryCategoryFilters" class="filter-row"></div>
+      </div>
+
+      <div class="filter-wrap">
+        <p class="filter-label">消費期限</p>
+        <div class="filter-row">
+          <button data-expiry-filter="all" class="filter-btn active-filter">すべて</button>
+          <button data-expiry-filter="soon" class="filter-btn">3日以内</button>
+          <button data-expiry-filter="expired" class="filter-btn">期限切れ</button>
+        </div>
+      </div>
+
+      <div id="pantryList" class="group-list empty">まだ在庫がありません。</div>
+    </section>
+
+    <section class="screen" id="shoppingScreen">
+      <div class="page-title">
+        <div><p class="eyebrow">Shopping</p><h2>買い物リスト</h2></div>
+        <button class="primary compact" id="manualShoppingBtn">＋ 追加</button>
+      </div>
+
+      <div class="shopping-progress">
+        <span id="shoppingProgressText">0 / 0 完了</span>
+        <div class="progress-track"><div id="shoppingProgressBar" class="progress-bar"></div></div>
+      </div>
+
+      <div class="filter-wrap">
+        <p class="filter-label">カテゴリ</p>
+        <div id="shoppingCategoryFilters" class="filter-row"></div>
+      </div>
+
+      <div id="shoppingList" class="list empty">買い物リストは空です。</div>
+    </section>
+  </main>
+
+  
+<section class="screen" id="flowScreen">
+  <div class="screen-head">
+    <div><p class="eyebrow">SnapStock Flow</p><h2>暮らしの流れ</h2></div>
+  </div>
+  <div class="flow-grid">
+    <div class="flow-card"><span>①</span><strong>買う</strong><p>レシートから家計簿と在庫へ</p></div>
+    <div class="flow-card"><span>②</span><strong>しまう</strong><p>在庫・期限をまとめて管理</p></div>
+    <div class="flow-card"><span>③</span><strong>使う</strong><p>使い切ったら在庫なしへ</p></div>
+    <div class="flow-card"><span>④</span><strong>また買う</strong><p>ワンタップで買い物リストへ</p></div>
+  </div>
+</section>
+
+<nav class="bottom-nav">
+    <button class="nav-btn active" data-go="homeScreen"><span>⌂</span>ホーム</button>
+    <button class="nav-btn" data-go="scanScreen"><span>▣</span>読取</button>
+    <button class="nav-btn" data-go="budgetScreen"><span>¥</span>家計簿</button>
+    <button class="nav-btn" data-go="pantryScreen"><span>□</span>在庫</button>
+    <button class="nav-btn" data-go="shoppingScreen"><span>✓</span>買い物</button>
+  </nav>
+</div>
+
+<div class="modal hidden" id="manualStockModal">
+  <div class="modal-card">
+    <div class="panel-head"><h3>在庫を追加</h3><button class="icon-btn" id="closeStockModal">×</button></div>
+    <label>商品名<input id="manualName" placeholder="例：牛乳"></label>
+    <div class="form-row two">
+      <label>数量<input id="manualQty" type="number" min="0" value="1"></label>
+      <label>カテゴリ<select id="manualCategory"></select></label>
+    </div>
+    <label>賞味期限<input id="manualExpiry" type="date"></label>
+    <button class="primary" id="saveManualStock">追加する</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="shoppingModal">
+  <div class="modal-card">
+    <div class="panel-head"><h3>買い物リストに追加</h3><button class="icon-btn" id="closeShoppingModal">×</button></div>
+    <label>商品名<input id="shoppingName" placeholder="例：牛乳"></label>
+    <div class="form-row two">
+      <label>数量<input id="shoppingQty" type="number" min="1" value="1"></label>
+      <label>カテゴリ<select id="shoppingCategory"></select></label>
+    </div>
+    <label>メモ<input id="shoppingMemo" placeholder="例：低脂肪・特売なら2本"></label>
+    <button class="primary" id="saveShoppingItem">追加する</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="receiptTotalModal">
+  <div class="modal-card">
+    <div class="panel-head"><h3>レシート合計を修正</h3><button class="icon-btn" id="closeReceiptTotalModal">×</button></div>
+    <label>レシートに印字されている合計金額
+      <input id="receiptTotalInput" type="number" min="0" placeholder="例：6766">
+    </label>
+    <button class="primary" id="saveReceiptTotalBtn">この金額にする</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="budgetEditModal">
+  <div class="modal-card">
+    <div class="panel-head"><h3>家計簿を編集</h3><button class="icon-btn" id="closeBudgetEdit">×</button></div>
+    <input type="hidden" id="budgetEditPurchaseId"><input type="hidden" id="budgetEditItemIndex">
+    <label>商品名<input id="budgetEditName"></label>
+    <label>金額<input id="budgetEditPrice" type="number" min="0"></label>
+    <label>数量<input id="budgetEditQty" type="number" min="1"></label>
+    <label>カテゴリ<select id="budgetEditCategory"></select></label>
+    <label>消費期限<input id="budgetEditExpiry" type="date"></label>
+    <label>購入日<input id="budgetEditDate" type="date"></label>
+    <label>店舗<input id="budgetEditStore"></label>
+    <button class="primary" id="saveBudgetEdit">変更を保存</button>
+    <button class="secondary danger-text" id="deleteBudgetItem">この明細を削除</button>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
