@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SnapStock Web v22</title>
+  <title>SnapStock Web v23</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,9 +11,12 @@
   <header class="topbar">
     <div>
       <p class="eyebrow">Receipt × Pantry × Shopping</p>
-      <h1>SnapStock <small>Web v22</small></h1>
+      <h1>SnapStock <small>Web v23</small></h1>
     </div>
-    <button class="icon-btn" id="resetBtn" title="データ初期化">↻</button>
+    <div class="header-actions">
+      <button class="account-btn" id="accountBtn" title="アカウント">👤</button>
+      <button class="icon-btn" id="resetBtn" title="データ初期化">↻</button>
+    </div>
   </header>
 
   <main>
@@ -57,7 +60,7 @@
         <input type="file" id="receiptInput" accept="image/*" capture="environment" />
         <span class="camera">📷</span>
         <strong>レシートを撮影 / 選択</strong>
-        <small>Web v22：HEIC/HEIF対応</small>
+        <small>Web v23：ログイン・クラウド保存対応</small>
       </label>
       <img id="receiptPreview" class="preview hidden" alt="レシートプレビュー" />
 
@@ -275,6 +278,54 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <p class="eyebrow">SnapStock Cloud</p>
+    <h2>自分専用のSnapStock</h2>
+    <p class="auth-copy">ログインすると、家計簿・在庫・買い物リストをクラウド保存して、別の端末からも同じデータを使えます。</p>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-auth-tab="login">ログイン</button>
+      <button type="button" class="auth-tab" data-auth-tab="signup">新規登録</button>
+    </div>
+
+    <form id="loginForm" class="auth-form">
+      <label>メールアドレス<input id="loginEmail" type="email" autocomplete="email" required placeholder="mail@example.com"></label>
+      <label>パスワード<input id="loginPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="6文字以上"></label>
+      <button class="primary" type="submit">ログイン</button>
+    </form>
+
+    <form id="signupForm" class="auth-form hidden">
+      <label>メールアドレス<input id="signupEmail" type="email" autocomplete="email" required placeholder="mail@example.com"></label>
+      <label>パスワード<input id="signupPassword" type="password" autocomplete="new-password" required minlength="6" placeholder="6文字以上"></label>
+      <label>パスワード確認<input id="signupPasswordConfirm" type="password" autocomplete="new-password" required minlength="6"></label>
+      <button class="primary" type="submit">アカウントを作成</button>
+    </form>
+
+    <p id="authMessage" class="auth-message"></p>
+    <p class="auth-note">※ 発表用デモでは、利用者ごとにデータが分かれて保存されます。</p>
+  </div>
+</div>
+
+<div class="modal hidden" id="accountModal">
+  <div class="modal-card">
+    <div class="panel-head"><h3>アカウント</h3><button class="icon-btn" id="closeAccountModal">×</button></div>
+    <div class="account-info">
+      <span>ログイン中</span>
+      <strong id="accountEmail">-</strong>
+    </div>
+    <div class="cloud-status">
+      <span id="cloudStatusDot" class="cloud-dot"></span>
+      <span id="cloudStatusText">クラウド同期を確認中…</span>
+    </div>
+    <button class="secondary" id="syncNowBtn">今すぐ同期</button>
+    <button class="secondary danger-text" id="logoutBtn">ログアウト</button>
+  </div>
+</div>
+
 <script src="app.js"></script>
+<script src="cloud_auth.js"></script>
 </body>
 </html>

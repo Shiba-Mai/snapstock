@@ -174,9 +174,20 @@ def no_cache(response):
 def index():
     return send_from_directory(ROOT,"index.html")
 
+
+@app.get("/api/config")
+def public_config():
+    url = os.environ.get("SUPABASE_URL", "")
+    key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
+    return jsonify({
+        "ok": bool(url and key),
+        "supabase_url": url,
+        "supabase_publishable_key": key,
+    })
+
 @app.get("/api/status")
 def status():
-    return jsonify({"ok":True,"version":"web-v22","engine":_engine_name or "PaddleOCR (未ロード)"})
+    return jsonify({"ok":True,"version":"web-v23","engine":_engine_name or "PaddleOCR (未ロード)"})
 
 @app.post("/api/ocr")
 def ocr_api():

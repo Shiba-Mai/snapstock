@@ -1,3 +1,3 @@
-# SnapStock Web v22
+# SnapStock Web v23
 
-Vercel公開用・HEIC/HEIF対応版です。
+Supabaseログイン＋ユーザー別クラウド保存対応版です。
